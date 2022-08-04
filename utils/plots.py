@@ -53,6 +53,11 @@ def butter_lowpass_filtfilt(data, cutoff=1500, fs=50000, order=5):
     b, a = butter_lowpass(cutoff, fs, order=order)
     return filtfilt(b, a, data)  # forward-backward filter
 
+def plot_fps(fps, img, color=[225, 255, 255], line_thickness=2):
+    cv2.putText(img,'FPS:' + str(round(fps,2)), (50,50), 0, 1, color, line_thickness, cv2.LINE_AA)
+
+
+
 
 def plot_one_box(x, img, color=None, label=None, line_thickness=3):
     # Plots one bounding box on image img

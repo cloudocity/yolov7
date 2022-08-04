@@ -11,7 +11,7 @@ from models.experimental import attempt_load
 from utils.datasets import LoadStreams, LoadImages
 from utils.general import check_img_size, check_requirements, check_imshow, non_max_suppression, apply_classifier, \
     scale_coords, xyxy2xywh, strip_optimizer, set_logging, increment_path
-from utils.plots import plot_one_box
+from utils.plots import plot_one_box,plot_fps
 from utils.torch_utils import select_device, load_classifier, time_synchronized, TracedModel
 
 
@@ -101,6 +101,9 @@ def detect(save_img=False):
 
         # Process detections
         for i, det in enumerate(pred):  # detections per image
+            new_frame_time = time.time()
+            fps = 1 / (new_frame_time - prev_frame_time)
+
             if webcam:  # batch_size >= 1
                 p, s, im0, frame = path[i], '%g: ' % i, im0s[i].copy(), dataset.count
             else:
@@ -127,21 +130,19 @@ def detect(save_img=False):
                         with open(txt_path + '.txt', 'a') as f:
                             f.write(('%g ' * len(line)).rstrip() % line + '\n')
 
-                    if save_img or view_img:  # Add bbox to image
+                    if save_img or view_img:  # Add bbox to image and FPS Frame
                         label = f'{names[int(cls)]} {conf:.2f}'
+                        plot_fps(fps,im0)
                         plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=3)
+
 
             # Print time (inference + NMS)
             #print(f'{s}Done. ({(1E3 * (t2 - t1)):.1f}ms) Inference, ({(1E3 * (t3 - t2)):.1f}s) NMS')
 
             # Stream results
             if view_img:
-                new_frame_time = time.time()
-                fps = 1 / (new_frame_time - prev_frame_time)
                 cv2.imshow(str(p), im0)
-                print('FPS:' , round(fps,2))
                 cv2.waitKey(1)  # 1 millisecond
-                prev_frame_time = new_frame_time
             # Save results (image with detections)
             if save_img:
                 if dataset.mode == 'image':
@@ -161,7 +162,7 @@ def detect(save_img=False):
                             save_path += '.mp4'
                         vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                     vid_writer.write(im0)
-
+        prev_frame_time = new_frame_time
     if save_txt or save_img:
         s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
         #print(f"Results saved to {save_dir}{s}")
